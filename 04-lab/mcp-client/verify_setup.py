@@ -7,6 +7,11 @@ import os
 import sys
 from pathlib import Path
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
+
 def check_environment():
     """Check if .env file exists and is configured"""
     print("🔍 Checking environment configuration...")
@@ -27,7 +32,7 @@ def check_environment():
         print("   Get key from: https://aistudio.google.com/apikey")
         return False
     
-    print(f"✅ GOOGLE_API_KEY configured ({api_key[:10]}...)")
+    print("✅ GOOGLE_API_KEY configured")
     return True
 
 def check_dependencies():
@@ -36,11 +41,8 @@ def check_dependencies():
     
     required_packages = [
         ("google.adk", "Google ADK"),
-        ("google.generativeai", "Google Generative AI"),
         ("mcp", "MCP"),
-        ("fastmcp", "FastMCP"),
         ("dotenv", "python-dotenv"),
-        ("httpx", "httpx"),
     ]
     
     all_installed = True
@@ -78,29 +80,35 @@ def check_agent_structure():
     
     return all_exist
 
+async def _list_mcp_tools(server_url):
+    """Connect using the MCP protocol and return the advertised tool names."""
+    from mcp import ClientSession
+    from mcp.client.streamable_http import streamablehttp_client
+
+    async with streamablehttp_client(server_url) as (read, write, _):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            result = await session.list_tools()
+            return {tool.name for tool in result.tools}
+
+
 def check_mcp_server():
     """Check if MCP server is accessible"""
     print("\n🔍 Checking MCP server connectivity...")
     
-    server_url = "https://weather-mcp-server-oze7nwnjba-as.a.run.app"
+    server_url = os.getenv("MCP_SERVER_URL", "http://localhost:8085/mcp")
     
     try:
-        import httpx
         import asyncio
-        
-        async def test_connection():
-            async with httpx.AsyncClient() as client:
-                response = await client.get(server_url, timeout=10.0)
-                return response.status_code
-        
-        status_code = asyncio.run(test_connection())
-        
-        if status_code in [200, 404]:  # 404 is expected for GET on MCP endpoint
-            print(f"✅ MCP server reachable at {server_url}")
-            return True
-        else:
-            print(f"⚠️  MCP server returned status {status_code}")
+        tools = asyncio.run(_list_mcp_tools(server_url))
+        expected = {"get_current_weather", "get_forecast", "health_check"}
+        missing = expected - tools
+        if missing:
+            print(f"❌ MCP server is missing tools: {', '.join(sorted(missing))}")
             return False
+        print(f"✅ MCP server reachable at {server_url}")
+        print(f"   Tools: {', '.join(sorted(tools))}")
+        return True
             
     except Exception as e:
         print(f"❌ Cannot reach MCP server: {e}")
@@ -142,8 +150,7 @@ def main():
     if all(checks):
         print("✅ All checks passed!")
         print("\n🚀 Ready to start!")
-        print("   Run: ./start_agent.sh")
-        print("   Or:  uv run adk web")
+        print("   Run: uv run adk web")
         print("\n📍 Then open: http://localhost:8000")
         return 0
     else:

@@ -86,4 +86,13 @@ Open http://localhost:8000 in your browser, select `weather_agent`, and ask abou
 |----------|-------|-------------|
 | `WEATHERAPI_KEY` | mcp-server | API key from weatherapi.com |
 | `GOOGLE_API_KEY` | mcp-client/.env | Gemini API key |
+| `MCP_SERVER_URL` | mcp-client/.env | MCP endpoint (default: `http://localhost:8085/mcp`) |
+| `GOOGLE_MODEL` | mcp-client/.env | Gemini model (default: `gemini-2.5-flash`) |
 | `PORT` | mcp-server (env) | Override server port (default: 8085) |
+
+Run the setup check while the MCP server is running:
+
+```bash
+cd mcp-client
+uv run python verify_setup.py
+```

@@ -52,6 +52,9 @@ cd mcp-client
 # Create .env file with your Google API key
 # Get free key from: https://aistudio.google.com/apikey
 echo "GOOGLE_API_KEY=your_google_api_key_here" > .env
+# Optional overrides:
+# MCP_SERVER_URL=http://localhost:8085/mcp
+# GOOGLE_MODEL=gemini-2.5-flash
 ```
 
 ### 3. Install Dependencies
@@ -63,6 +66,7 @@ uv sync
 ### 4. Run the Agent
 
 ```bash
+uv run python verify_setup.py
 uv run adk web
 ```
 
@@ -94,7 +98,7 @@ mcp-client/
 In `weather_agent/agent.py`:
 
 ```python
-MCP_SERVER_URL = "http://localhost:8085/mcp"
+MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://localhost:8085/mcp")
 
 connection_params = StreamableHTTPConnectionParams(
     url=MCP_SERVER_URL,
@@ -133,6 +137,8 @@ Fix the connection and restart ADK web.
 Create `.env` file:
 ```bash
 GOOGLE_API_KEY=your_gemini_api_key
+MCP_SERVER_URL=http://localhost:8085/mcp
+GOOGLE_MODEL=gemini-2.5-flash
 ```
 
 ## Resources
